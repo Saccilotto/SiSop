@@ -1,2 +1,2 @@
 # SiSop
-Operational Systems' PUCRS lectures resultimg materials and experimentation codes
+Operational Systems PUCRS lectures' resulting materials and experimentation codes
