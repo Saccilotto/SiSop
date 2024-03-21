@@ -37,8 +37,8 @@ int main(int argc, char *argv[])
 	pthread_mutex_init(&m1, NULL);
 	pthread_mutex_init(&m2, NULL);
 	pthread_mutex_init(&m3, NULL);
-	//pthread_mutex_lock(&m2);
-	//pthread_mutex_lock(&m3);
+	pthread_mutex_lock(&m2);
+	pthread_mutex_lock(&m3);
 
 	pthread_create(&threads[0], NULL, task1, NULL);
 	pthread_create(&threads[1], NULL, task2, NULL);
