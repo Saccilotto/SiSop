@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -g
+CFLAGS=-Wall -g -lpthread
 SRCS=$(wildcard *.c)
 PROGS=$(patsubst %.c,%,$(SRCS))
 
