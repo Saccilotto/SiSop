@@ -34,6 +34,13 @@ namespace concurrent {
                 empty_(), 
                 capacity_(MAX_CAPACITY) 
             {}
+
+            blocking_queue(int capacity) :
+                mtx(), 
+                full_(), 
+                empty_(), 
+                capacity_(capacity) 
+            {}
             
             void enqueue(const T& data) {
                 unique_lock<mutex> lock(mtx);
