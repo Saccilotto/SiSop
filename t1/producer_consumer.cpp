@@ -6,10 +6,12 @@
 #include <chrono>
 #include "concurrentQueue.hpp"
 #include "threadWrapper.hpp"
+#include "mutexPeterson.hpp"
 
 using namespace std;
 using namespace concurrent::queue;
 using namespace concurrent::wrapper;
+using namespace concurrent::mutex; // TODO exchange the mutex usage to Peterson's algorithm in this file
 
 int data_length = 1000;
 mutex cout_lock;
