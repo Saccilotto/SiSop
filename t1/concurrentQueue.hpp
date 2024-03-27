@@ -6,7 +6,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#define MAX_CAPACITY 20
+#define MAX_CAPACITY 100
 
 using namespace std;
 

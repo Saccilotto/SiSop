@@ -11,7 +11,8 @@ using namespace std;
 using namespace concurrent::queue;
 using namespace concurrent::wrapper;
 
-static int data_length = 1000;
+int data_length = 1000;
+mutex cout_lock;
 
 struct Data {
 
@@ -19,36 +20,35 @@ private:
     static int id;
 public:
     bool isLast;
-    int CURRENT_ID;
     string message;
 
     Data() {
-        CURRENT_ID = id;
-        message = to_string(CURRENT_ID);
-        setIsLast(data_length);
+        message = to_string(id);
+        setIsLast();
         nextId();
     };
 
     Data(string message) {
-       CURRENT_ID = id;
        this->message = message; 
+       setIsLast();
        nextId();
     };
 
-    void setIsLast(int length) {
-        CURRENT_ID >= length - 1 ? isLast = true : isLast = false;
+    void setIsLast() {
+        cout_lock.lock();
+        id >= data_length - 1 ? isLast = true : isLast = false;
+        cout_lock.unlock();
     }
 
-    void reset() {
-        id = 0;
-    }
 
     void nextId() {
+        cout_lock.lock();
         id += 1;
+        cout_lock.unlock();
     }
 
     int getCurrentId() {
-        return CURRENT_ID;
+        return id;
     }
 
     bool getIsLast() { 
@@ -59,14 +59,13 @@ public:
         this->message = message;
     }
 
-    void print() {
-        cout << " Message: " << message << endl;
+    void print(string s) {
+        cout << s << " item: " << getCurrentId() << endl;
     }
 };
 
 
 int Data::id = 0;
-mutex cout_lock;
 blocking_queue<Data> data_queue;
 
 class Producer {
@@ -78,18 +77,19 @@ public:
     void operator()() { 
         while(true)
         {
-            Data new_data;
-            if (new_data.getIsLast()) {
+            Data new_data = Data();
+            if(new_data.getIsLast()) {
                 data_queue.enqueue(new_data);
                 cout_lock.lock();
-                cout << "Produced item: "  << new_data.getCurrentId() << endl;
+                new_data.print("\nProduced");
                 cout_lock.unlock();
                 break;
+            } else {
+                data_queue.enqueue(new_data);
+                cout_lock.lock();
+                new_data.print("\nProduced");
+                cout_lock.unlock();
             }
-            data_queue.enqueue(new_data);
-            cout_lock.lock();
-            cout << "\nProduced item: "  << new_data.getCurrentId() << endl;
-            cout_lock.unlock();
         }
         return;
     };  
@@ -106,7 +106,7 @@ public:
         while (true) {
             Data aux = data_queue.dequeue();
             cout_lock.lock();
-            cout << "\nConsumed item: " << aux.getCurrentId() << endl;
+            aux.print("\nConsumed");
             cout_lock.unlock();
             if(aux.getIsLast()) {
                break;
@@ -117,16 +117,17 @@ public:
 };
 
 void management(int threads_prod, int threads_cons) {
-    vector<threadWrapper> allThreads;
+    vector<threadWrapper> prod_threads;
+    vector<threadWrapper> cons_threads;
 
     for(int i = 0; i < threads_prod; i++) {
         Producer prod = Producer();
-        allThreads.push_back(move(threadWrapper(thread(prod))));
+        prod_threads.push_back(move(threadWrapper(thread(prod))));
     }
 
     for(int i = 0; i < threads_cons; i++) {
         Consumer cons = Consumer();
-        allThreads.push_back(move(threadWrapper(thread(cons))));
+        cons_threads.push_back(move(threadWrapper(thread(cons))));
     }
 }
 
@@ -139,6 +140,10 @@ int main(int argc, char const *argv[]) {
 
     int numthreads1 = atoi(argv[1]);
     int numthreads2 = atoi(argv[2]);
+
+    if(argc == 4) {
+        data_length = atoi(argv[3]);
+    }
 
     management(numthreads1, numthreads2);
 
