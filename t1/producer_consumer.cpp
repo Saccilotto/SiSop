@@ -20,8 +20,9 @@ using std::move;
 // Define the length of the data
 int data_length = 1000;
 
-// Define Peterson's mutex for general use and another for specific use
-mutex::peterson_gen peterson_operator;
+// Define Peterson's mutex for general use and another for 2 threads use
+mutex::peterson_gen peterson_operator_prod;
+mutex::peterson_gen peterson_operator_cons;
 mutex::peterson_gen peterson_data;
 
 // Define the Data structure
@@ -53,14 +54,12 @@ struct Data {
         void setIsLast() {
             peterson_data.lock(0);
             id >= data_length - 1 ? isLast = true : isLast = false;
-            peterson_data.unlock(0);   
+            peterson_data.unlock(0);
         }
 
         // Increment the ID
         void nextId() {
-            peterson_data.lock(0);
             id += 1;
-            peterson_data.unlock(0);
         }
 
         // Get the current ID
@@ -125,22 +124,22 @@ class Producer : public ThreadTask {
 
         // Override the operator() function
         void operator()() override { 
-            std::ostringstream ss;
-            ss << std::this_thread::get_id();
+
             while(true) {
+                peterson_operator_prod.lock(ThreadTask::num_thread);
+                std::ostringstream ss;
+                ss << std::this_thread::get_id();
                 Data new_data = Data();
-                new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Producer thread");    
                 if(new_data.getIsLast()) {
                     data_queue.enqueue(new_data);
-                    peterson_operator.lock(ThreadTask::num_thread);
+                    new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Producer thread");
                     new_data.print();
-                    peterson_operator.lock(ThreadTask::num_thread);
                     break;
                 } 
-                data_queue.enqueue(new_data);
-                peterson_operator.lock(ThreadTask::num_thread);
+                new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Producer thread");    
                 new_data.print();
-                peterson_operator.lock(ThreadTask::num_thread);
+                data_queue.enqueue(new_data);
+                peterson_operator_prod.unlock(ThreadTask::num_thread);
             }
             return;
         };  
@@ -154,21 +153,21 @@ class Consumer : public ThreadTask {
 
         // Override the operator() function
         void operator()() { 
-            std::ostringstream ss;
-            ss << std::this_thread::get_id();
+
             while(true) {
+                peterson_operator_cons.lock(ThreadTask::num_thread);
+                std::ostringstream ss;
+                ss << std::this_thread::get_id();
                 Data aux = data_queue.dequeue();
-                aux.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Consumer thread");    
                 if(aux.getIsLast()) {
-                    int i = 0;
-                    peterson_operator.lock(0);
+                    aux.setMessage("Consumed by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Consumer thread");    
                     aux.print();
-                    peterson_operator.unlock(0);
                     break;
                 }
-                peterson_operator.lock(0);
+                
+                aux.setMessage("Consumed by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Consumer thread");    
                 aux.print();
-                peterson_operator.unlock(0);
+                peterson_operator_cons.unlock(ThreadTask::num_thread);
             }
             return;
         };
@@ -187,6 +186,7 @@ void management(int threads_prod, int threads_cons) {
         Consumer cons = Consumer(threads_cons, j);
         allThreads.push_back(move(wrapper::threadWrapper(thread(cons))));
     }
+    
 }
 
 // Main function
@@ -206,12 +206,12 @@ int main(int argc, char const *argv[]) {
     // Get the number of producer and consumer threads
     int num_producer_threads = atoi(argv[1]);
     int num_consumer_threads = atoi(argv[2]);
-    int total_threads = num_producer_threads + num_consumer_threads;
+    //int total_threads = num_producer_threads + num_consumer_threads;
 
     // Initialize the Peterson's mutexes
-    peterson_operator = mutex::peterson_gen(total_threads);
-    peterson_data = mutex::peterson_gen();
-
+    peterson_operator_prod = mutex::peterson_gen(num_producer_threads); // for the N producer threads
+    peterson_operator_cons = mutex::peterson_gen(num_consumer_threads); // for the M consumer thread
+    peterson_data = mutex::peterson_gen();  // for syncronization of the data acess (1 thread from prod and cons at a time)
 
     // Manage the threads
     management(num_producer_threads, num_consumer_threads);
