@@ -6,7 +6,7 @@
 #include <sstream>
 #include "concurrentQueue.hpp"
 #include "threadWrapper.hpp"
-#include "mutexPeterson.hpp"
+#include "peterson.hpp"
 
 // Use namespace std for convenience
 using std::string;
@@ -21,8 +21,8 @@ using std::move;
 int data_length = 1000;
 
 // Define Peterson's mutex for general use and another for specific use
-mutex::peterson_gen peterson_genmutex;
-mutex::peterson_gen peterson_genmutex2;
+mutex::peterson_gen peterson_operator;
+mutex::peterson_gen peterson_data;
 
 // Define the Data structure
 struct Data {
@@ -51,16 +51,16 @@ struct Data {
 
         // Set the isLast flag
         void setIsLast() {
-            peterson_genmutex2.lock(0);
+            peterson_data.lock(0);
             id >= data_length - 1 ? isLast = true : isLast = false;
-            peterson_genmutex2.unlock(0);   
+            peterson_data.unlock(0);   
         }
 
         // Increment the ID
         void nextId() {
-            peterson_genmutex2.lock(0);
+            peterson_data.lock(0);
             id += 1;
-            peterson_genmutex2.unlock(0);
+            peterson_data.unlock(0);
         }
 
         // Get the current ID
@@ -75,23 +75,22 @@ struct Data {
 
         // Set the message
         void setMessage(string message) {
-            peterson_genmutex2.lock(0);
+            peterson_data.lock(0);
             this->message = message;
-            peterson_genmutex2.unlock(0);
+            peterson_data.unlock(0);
         }   
 
         // Print the data
         void print() {
-            peterson_genmutex2.lock(0);
+            peterson_data.lock(0);
             string print_message = "item: " + to_string(getCurrentId()) + " | " + message + " | isLast: " + to_string(isLast);
             cout << print_message << endl;
-            peterson_genmutex2.unlock(0);
+            peterson_data.unlock(0);
         }
 };
 
 // Initialize the static ID counter
 int Data::id = 0;
-
 // Define the blocking queue for data
 queue::blocking_queue<Data> data_queue = queue::blocking_queue<Data>();
 
@@ -133,15 +132,15 @@ class Producer : public ThreadTask {
                 new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Producer thread");    
                 if(new_data.getIsLast()) {
                     data_queue.enqueue(new_data);
-                    peterson_genmutex.lock(ThreadTask::num_thread);
+                    peterson_operator.lock(ThreadTask::num_thread);
                     new_data.print();
-                    peterson_genmutex.lock(ThreadTask::num_thread);
+                    peterson_operator.lock(ThreadTask::num_thread);
                     break;
                 } 
                 data_queue.enqueue(new_data);
-                peterson_genmutex.lock(ThreadTask::num_thread);
+                peterson_operator.lock(ThreadTask::num_thread);
                 new_data.print();
-                peterson_genmutex.lock(ThreadTask::num_thread);
+                peterson_operator.lock(ThreadTask::num_thread);
             }
             return;
         };  
@@ -162,14 +161,14 @@ class Consumer : public ThreadTask {
                 aux.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Consumer thread");    
                 if(aux.getIsLast()) {
                     int i = 0;
-                    peterson_genmutex.lock(0);
+                    peterson_operator.lock(0);
                     aux.print();
-                    peterson_genmutex.unlock(0);
+                    peterson_operator.unlock(0);
                     break;
                 }
-                peterson_genmutex.lock(0);
+                peterson_operator.lock(0);
                 aux.print();
-                peterson_genmutex.unlock(0);
+                peterson_operator.unlock(0);
             }
             return;
         };
@@ -207,10 +206,12 @@ int main(int argc, char const *argv[]) {
     // Get the number of producer and consumer threads
     int num_producer_threads = atoi(argv[1]);
     int num_consumer_threads = atoi(argv[2]);
+    int total_threads = num_producer_threads + num_consumer_threads;
 
     // Initialize the Peterson's mutexes
-    peterson_genmutex = mutex::peterson_gen(num_producer_threads + num_consumer_threads);
-    peterson_genmutex2 = mutex::peterson_gen();
+    peterson_operator = mutex::peterson_gen(total_threads);
+    peterson_data = mutex::peterson_gen();
+
 
     // Manage the threads
     management(num_producer_threads, num_consumer_threads);
