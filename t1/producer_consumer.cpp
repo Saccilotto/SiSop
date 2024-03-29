@@ -29,69 +29,69 @@ mutex::peterson_gen peterson_data;
 struct Data {
     // Private members
     private:
-        static int id;  // Static ID counter
+    static int id;  // Static ID counter
 
     // Public members
     public:
-        bool isLast;  // Flag to indicate if this is the last data
-        string message;  // Message of the data
+    bool isLast;  // Flag to indicate if this is the last data
+    string message;  // Message of the data
 
-        // Default constructor
-        Data() {
-            message = to_string(id);
-            setIsLast();
-            nextId();
-        };
+    // Default constructor
+    Data() {
+        message = to_string(id);
+        setIsLast();
+        nextId();
+    };
 
-        // Constructor with message
-        Data(string message) {
-            this->message = message; 
-            setIsLast();
-            nextId();
-        };
+    // Constructor with message
+    Data(string message) {
+        this->message = message; 
+        setIsLast();
+        nextId();
+    };
 
-        // Set the isLast flag
-        void setIsLast() {
-            peterson_data.lock(0);
-            id >= data_length - 1 ? isLast = true : isLast = false;
-            peterson_data.unlock(0);
-        }
+    // Set the isLast flag
+    void setIsLast() {
+        peterson_data.lock(0);
+        id >= data_length - 1 ? isLast = true : isLast = false;
+        peterson_data.unlock(0);
+    }
 
-        // Increment the ID
-        void nextId() {
-            peterson_data.lock(0);
-            id += 1;
-            peterson_data.unlock(0);
-        }
+    // Increment the ID
+    void nextId() {
+        peterson_data.lock(0);
+        id += 1;
+        peterson_data.unlock(0);
+    }
 
-        // Get the current ID
-        int getCurrentId() {
-            peterson_data.lock(0);
-            return id;
-            peterson_data.unlock(0);
-        }
+    // Get the current ID
+    int getCurrentId() {
+        peterson_data.lock(0);
+        return id;
+        peterson_data.unlock(0);
+    }
 
-        // Get the isLast flag
-        bool getIsLast() { 
-            peterson_data.lock(0);
-            return isLast;
-            peterson_data.unlock(0);
-        }  
+    // Get the isLast flag
+    bool getIsLast() { 
+        peterson_data.lock(0);
+        return isLast;
+        peterson_data.unlock(0);
+    }  
 
-        // Set the message
-        void setMessage(string message) {
-            peterson_data.lock(0);
-            this->message = message;
-            peterson_data.unlock(0);
-        }   
+    // Set the message
+    void setMessage(string message) {
+        peterson_data.lock(0);
+        this->message = message;
+        peterson_data.unlock(0);
+    }   
 
-        // Print the data
-        void print() {
-            peterson_data.lock(0);
-            string print_message = "item: " + to_string(getCurrentId()) + " | " + message + " | isLast: " + to_string(isLast);
-            cout << print_message << endl;
-            peterson_data.unlock(0);
-        }
+    // Print the data
+    void print() {
+        peterson_data.lock(0);
+        string print_message = "item: " + to_string(getCurrentId()) + " | " + message + " | isLast: " + to_string(isLast);
+        cout << print_message << endl;
+        peterson_data.unlock(0);
+    }
 };
 
 // Initialize the static ID counter
