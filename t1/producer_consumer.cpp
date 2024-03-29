@@ -59,17 +59,23 @@ struct Data {
 
         // Increment the ID
         void nextId() {
+            peterson_data.lock(0);
             id += 1;
+            peterson_data.unlock(0);
         }
 
         // Get the current ID
         int getCurrentId() {
+            peterson_data.lock(0);
             return id;
+            peterson_data.unlock(0);
         }
 
         // Get the isLast flag
         bool getIsLast() { 
+            peterson_data.lock(0);
             return isLast;
+            peterson_data.unlock(0);
         }  
 
         // Set the message
@@ -186,7 +192,7 @@ void management(int threads_prod, int threads_cons) {
         Consumer cons = Consumer(threads_cons, j);
         allThreads.push_back(move(wrapper::threadWrapper(thread(cons))));
     }
-    
+
 }
 
 // Main function
