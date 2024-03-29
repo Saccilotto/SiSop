@@ -99,84 +99,61 @@ int Data::id = 0;
 // Define the blocking queue for data
 queue::blocking_queue<Data> data_queue = queue::blocking_queue<Data>();
 
-// Define the base class for thread tasks
-class ThreadTask {
-    public:
-        int num_thread;  // Number of threads
-        int local_counter;  // Local counter
-
-        // Destructor, copy constructor, move constructor, copy assignment operator, move assignment operator
-        ~ThreadTask() = default;
-        ThreadTask(const ThreadTask&) = default;
-        ThreadTask(ThreadTask&& other) noexcept = default;
-        ThreadTask& operator=(const ThreadTask& other) = default;
-        ThreadTask& operator=(ThreadTask&& other) noexcept = default;
-
-        // Constructor
-        ThreadTask(int _threads, int _counter) :
-            num_thread(_threads),
-            local_counter(_counter)
-        {}
-
-        // Pure virtual function for operator()
-        virtual void operator()() = 0;
-};
-
 // Define the Producer class
-class Producer : public ThreadTask {
+class Producer : public wrapper::ThreadTask {
     public:   
-        // Inherit the constructor
-        using ThreadTask::ThreadTask;
+    // Inherit the constructor
+    using ThreadTask::ThreadTask;
 
-        // Override the operator() function
-        void operator()() override { 
+    // Override the operator() function
+    void operator()() override { 
 
-            while(true) {
-                peterson_operator_prod.lock(ThreadTask::num_thread);
-                std::ostringstream ss;
-                ss << std::this_thread::get_id();
-                Data new_data = Data();
-                if(new_data.getIsLast()) {
-                    data_queue.enqueue(new_data);
-                    new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Producer thread");
-                    new_data.print();
-                    break;
-                } 
-                new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Producer thread");    
-                new_data.print();
+        while(true) {
+            peterson_operator_prod.lock(ThreadTask::num_thread);
+            std::ostringstream ss;
+            ss << std::this_thread::get_id();
+            Data new_data = Data();
+            if(new_data.getIsLast()) {
                 data_queue.enqueue(new_data);
-                peterson_operator_prod.unlock(ThreadTask::num_thread);
-            }
-            return;
-        };  
+                new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Producer thread");
+                new_data.print();
+                break;
+            } 
+            new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Producer thread");    
+            new_data.print();
+            data_queue.enqueue(new_data);
+            peterson_operator_prod.unlock(ThreadTask::num_thread);
+        }
+        return;
+    };  
 };
 
 // Define the Consumer class
-class Consumer : public ThreadTask {
+class Consumer : public wrapper::ThreadTask {
     public:   
-        // Inherit the constructor
-        using ThreadTask::ThreadTask;
+    // Inherit the constructor
+    using ThreadTask::ThreadTask;
 
-        // Override the operator() function
-        void operator()() { 
+    // Override the operator() function
+    void operator()() { 
 
-            while(true) {
-                peterson_operator_cons.lock(ThreadTask::num_thread);
-                std::ostringstream ss;
-                ss << std::this_thread::get_id();
-                Data aux = data_queue.dequeue();
-                if(aux.getIsLast()) {
-                    aux.setMessage("Consumed by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Consumer thread");    
-                    aux.print();
-                    break;
-                }
-                
+        while(true) {
+            peterson_operator_cons.lock(ThreadTask::num_thread);
+            std::ostringstream ss;
+            ss << std::this_thread::get_id();
+            Data aux = data_queue.dequeue();
+            if(aux.getIsLast()) {
                 aux.setMessage("Consumed by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Consumer thread");    
                 aux.print();
-                peterson_operator_cons.unlock(ThreadTask::num_thread);
+                break;
             }
-            return;
-        };
+            
+            aux.setMessage("Consumed by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Consumer thread");    
+            aux.print();
+            peterson_operator_cons.unlock(ThreadTask::num_thread);
+        }
+        return;
+    };
 };
 
 // Function to manage the threads
@@ -192,7 +169,6 @@ void management(int threads_prod, int threads_cons) {
         Consumer cons = Consumer(threads_cons, j);
         allThreads.push_back(move(wrapper::threadWrapper(thread(cons))));
     }
-
 }
 
 // Main function

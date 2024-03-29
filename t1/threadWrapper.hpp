@@ -41,5 +41,28 @@ namespace wrapper {
 			}
 		}	
 	};
+
+	// Define the base class for thread tasks
+	class ThreadTask {
+		public:
+			int num_thread;  // Number of threads
+			int local_counter;  // Local counter
+
+			// Destructor, copy constructor, move constructor, copy assignment operator, move assignment operator
+			~ThreadTask() = default;
+			ThreadTask(const ThreadTask&) = default;
+			ThreadTask(ThreadTask&& other) noexcept = default;
+			ThreadTask& operator=(const ThreadTask& other) = default;
+			ThreadTask& operator=(ThreadTask&& other) noexcept = default;
+
+			// Constructor
+			ThreadTask(int _threads, int _counter) :
+				num_thread(_threads),
+				local_counter(_counter)
+			{}
+
+			// Pure virtual function for operator()
+			virtual void operator()() = 0;
+	};
 }
 

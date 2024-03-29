@@ -105,8 +105,23 @@ namespace queue {
             return queue_.empty();
         }
 
-        void setCapacity(const size_t capacity) {
-            capacity_ = (capacity > 0 ? capacity : MAX_CAPACITY);
+        void setCapacity(size_t new_capacity) {
+            std::lock_guard<std::mutex> lock(mtx);
+            if (new_capacity < count_) {
+                // If the new capacity is smaller than the current size of the queue,
+                // remove items from the front of the queue until it fits in the new capacity.
+                front_ = (front_ + (count_ - new_capacity)) % capacity_;
+                count_ = new_capacity;
+            }
+            capacity_ = new_capacity;
+            // Create a new vector with the new capacity and move the items to it.
+            std::vector<T> new_queue(new_capacity);
+            for (size_t i = 0; i < count_; ++i) {
+                new_queue[i] = std::move(queue_[(front_ + i) % capacity_]);
+            }
+            queue_ = std::move(new_queue);
+            front_ = 0;
+            back_ = count_;
         }
     };
 };
