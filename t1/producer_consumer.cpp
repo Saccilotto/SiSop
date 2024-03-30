@@ -89,7 +89,7 @@ struct Data {
     void print() {
         peterson_data.lock(0);
         string print_message = "item: " + to_string(getCurrentId()) + " | " + message + " | isLast: " + to_string(isLast);
-        cout << print_message << endl;
+        cout << print_message << "\n";
         peterson_data.unlock(0);
     }
 };

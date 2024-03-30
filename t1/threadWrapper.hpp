@@ -2,7 +2,6 @@
 #include <functional>
 #include <iostream>
 #include <thread>
-#include <chrono>
 
 namespace wrapper {
 	/* class threadWrapper */
@@ -47,6 +46,8 @@ namespace wrapper {
 		public:
 			int num_thread;  // Number of threads
 			int local_counter;  // Local counter
+			static int numCozinheirosAtivos;
+
 
 			// Destructor, copy constructor, move constructor, copy assignment operator, move assignment operator
 			~ThreadTask() = default;
@@ -64,5 +65,6 @@ namespace wrapper {
 			// Pure virtual function for operator()
 			virtual void operator()() = 0;
 	};
+	int ThreadTask::numCozinheirosAtivos = 0;
 }
 
