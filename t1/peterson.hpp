@@ -1,6 +1,7 @@
 #pragma once
 
-namespace mutex {   
+namespace mutex_peterson {   
+
     class peterson_gen { // Implementação de mutex de Peterson para n threads
     private:
         volatile int* level = 0;  // Níveis das threads no torneio

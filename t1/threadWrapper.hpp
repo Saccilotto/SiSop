@@ -42,29 +42,56 @@ namespace wrapper {
 	};
 
 	// Define the base class for thread tasks
-	class ThreadTask {
+	class ThreadTaskCanibal {
 		public:
-			int num_thread;  // Number of threads
-			int local_counter;  // Local counter
-			static int numCozinheirosAtivos;
-
+			int tribo;  // Number of threads
+			int canibal;  // Local counter
+			int maxTravessas;
+			static int travessasAtual;
 
 			// Destructor, copy constructor, move constructor, copy assignment operator, move assignment operator
-			~ThreadTask() = default;
-			ThreadTask(const ThreadTask&) = default;
-			ThreadTask(ThreadTask&& other) noexcept = default;
-			ThreadTask& operator=(const ThreadTask& other) = default;
-			ThreadTask& operator=(ThreadTask&& other) noexcept = default;
+			~ThreadTaskCanibal() = default;
+			ThreadTaskCanibal(const ThreadTaskCanibal&) = default;
+			ThreadTaskCanibal(ThreadTaskCanibal&& other) noexcept = default;
+			ThreadTaskCanibal& operator=(const ThreadTaskCanibal& other) = default;
+			ThreadTaskCanibal& operator=(ThreadTaskCanibal&& other) noexcept = default;
 
 			// Constructor
-			ThreadTask(int _threads, int _counter) :
-				num_thread(_threads),
-				local_counter(_counter)
-			{}
-
+			ThreadTaskCanibal(int _threads, int _counter, int _maxTravessas) {
+				tribo = _threads;
+				canibal = _counter;
+				maxTravessas = _maxTravessas;
+			}
 			// Pure virtual function for operator()
 			virtual void operator()() = 0;
 	};
-	int ThreadTask::numCozinheirosAtivos = 0;
+	int ThreadTaskCanibal::travessasAtual = 0;
+
+
+	// Define the base class for thread tasks
+	class ThreadTaskProdCons {
+		public:
+			int current_thread;  // Number of threads
+			int num_threads;  // Local counter
+			int maxTravessas;
+			static int travessasAtual;
+
+			// Destructor, copy constructor, move constructor, copy assignment operator, move assignment operator
+			~ThreadTaskProdCons() = default;
+			ThreadTaskProdCons(const ThreadTaskProdCons&) = default;
+			ThreadTaskProdCons(ThreadTaskProdCons&& other) noexcept = default;
+			ThreadTaskProdCons& operator=(const ThreadTaskProdCons& other) = default;
+			ThreadTaskProdCons& operator=(ThreadTaskProdCons&& other) noexcept = default;
+
+			// Constructor
+			ThreadTaskProdCons(int _threads, int _counter, int _maxTravessas) {
+				current_thread = _threads;
+				num_threads = _counter;
+				maxTravessas = _maxTravessas;
+			}
+			// Pure virtual function for operator()
+			virtual void operator()() = 0;
+	};
+	int ThreadTaskProdCons::travessasAtual = 0;
 }
 

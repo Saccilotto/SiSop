@@ -16,14 +16,15 @@ using std::cout;
 using std::endl;
 using std::to_string;
 using std::move;
+using queue_block::blocking_queue_circular;
 
 // Define the length of the data
 int data_length = 1000;
 
 // Define Peterson's mutex for general use and another for 2 threads use
-mutex::peterson_gen peterson_operator_prod;
-mutex::peterson_gen peterson_operator_cons;
-mutex::peterson_gen peterson_data;
+mutex_peterson::peterson_gen peterson_operator_prod;
+mutex_peterson::peterson_gen peterson_operator_cons;
+mutex_peterson::peterson_gen peterson_data;
 
 // Define the Data structure
 struct Data {
@@ -97,60 +98,59 @@ struct Data {
 // Initialize the static ID counter
 int Data::id = 0;
 // Define the blocking queue for data
-queue::blocking_queue<Data> data_queue = queue::blocking_queue<Data>();
+queue_block::blocking_queue_circular<Data> data_queue = queue_block::blocking_queue_circular<Data>();
 
 // Define the Producer class
-class Producer : public wrapper::ThreadTask {
+class Producer : public wrapper::ThreadTaskProdCons {
     public:   
     // Inherit the constructor
-    using ThreadTask::ThreadTask;
+    using ThreadTaskProdCons::ThreadTaskProdCons;
 
     // Override the operator() function
     void operator()() override { 
 
         while(true) {
-            peterson_operator_prod.lock(ThreadTask::num_thread);
+            peterson_operator_prod.lock(ThreadTaskProdCons::current_thread);
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             Data new_data = Data();
             if(new_data.getIsLast()) {
                 data_queue.enqueue(new_data);
-                new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Producer thread");
+                new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTaskProdCons::current_thread) + "th Producer thread");
                 new_data.print();
                 break;
             } 
-            new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Producer thread");    
+            new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTaskProdCons::current_thread) + "th Producer thread");    
             new_data.print();
             data_queue.enqueue(new_data);
-            peterson_operator_prod.unlock(ThreadTask::num_thread);
+            peterson_operator_prod.unlock(ThreadTaskProdCons::current_thread);
         }
         return;
     };  
 };
 
 // Define the Consumer class
-class Consumer : public wrapper::ThreadTask {
+class Consumer : public wrapper::ThreadTaskProdCons {
     public:   
     // Inherit the constructor
-    using ThreadTask::ThreadTask;
+    using ThreadTaskProdCons::ThreadTaskProdCons;
 
     // Override the operator() function
     void operator()() { 
-
         while(true) {
-            peterson_operator_cons.lock(ThreadTask::num_thread);
+            peterson_operator_cons.lock(ThreadTaskProdCons::current_thread);
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             Data aux = data_queue.dequeue();
             if(aux.getIsLast()) {
-                aux.setMessage("Consumed by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Consumer thread");    
+                aux.setMessage("Consumed by thread id " + ss.str() + " that is the " + to_string(ThreadTaskProdCons::current_thread) + "th Consumer thread");    
                 aux.print();
                 break;
             }
             
-            aux.setMessage("Consumed by thread id " + ss.str() + " that is the " + to_string(ThreadTask::num_thread) + "th Consumer thread");    
+            aux.setMessage("Consumed by thread id " + ss.str() + " that is the " + to_string(ThreadTaskProdCons::current_thread) + "th Consumer thread");    
             aux.print();
-            peterson_operator_cons.unlock(ThreadTask::num_thread);
+            peterson_operator_cons.unlock(ThreadTaskProdCons::current_thread);
         }
         return;
     };
@@ -161,12 +161,12 @@ void management(int threads_prod, int threads_cons) {
     vector<wrapper::threadWrapper> allThreads;
 
     for(int i = 0; i < threads_prod; i++) {
-        Producer prod = Producer(threads_prod, i);
+        Producer prod = Producer(threads_prod, i, 0);
         allThreads.push_back(move(wrapper::threadWrapper(thread(prod))));
     }
 
     for(int j = 0; j < threads_cons; j++) {
-        Consumer cons = Consumer(threads_cons, j);
+        Consumer cons = Consumer(threads_cons, j, 0);
         allThreads.push_back(move(wrapper::threadWrapper(thread(cons))));
     }
 }
@@ -191,9 +191,9 @@ int main(int argc, char const *argv[]) {
     //int total_threads = num_producer_threads + num_consumer_threads;
 
     // Initialize the Peterson's mutexes
-    peterson_operator_prod = mutex::peterson_gen(num_producer_threads); // for the N producer threads
-    peterson_operator_cons = mutex::peterson_gen(num_consumer_threads); // for the M consumer thread
-    peterson_data = mutex::peterson_gen();  // for syncronization of the data acess (1 thread from prod and cons at a time)
+    peterson_operator_prod = mutex_peterson::peterson_gen(num_producer_threads); // for the N producer threads
+    peterson_operator_cons = mutex_peterson::peterson_gen(num_consumer_threads); // for the M consumer thread
+    peterson_data = mutex_peterson::peterson_gen();  // for syncronization of the data acess (1 thread from prod and cons at a time)
 
     // Manage the threads
     management(num_producer_threads, num_consumer_threads);
