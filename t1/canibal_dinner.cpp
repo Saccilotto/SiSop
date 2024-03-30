@@ -29,19 +29,17 @@ using std::condition_variable;
 std::mutex mtx;
 std::condition_variable prato_pobre;
 std::condition_variable prato_cheio;
-std::mutex cozinheiro_mtx;
-std::condition_variable cozinheiro_cv;
 
 // Define the Comida class
 struct Comida {
 private:
     bool foiComida;
-    static int numComida;
+    int numComida;
 public:
 
     Comida() {
         foiComida = false;
-        numComida++;
+        numComida = 0;
     }
 
     void comer() {
@@ -52,17 +50,16 @@ public:
     bool getfoiComida() {
         return foiComida;
     }
-
-    void setnumComida(int a) {
-        numComida = a;
-    }
  
-    static int getNumComida() {
+    int getNumComida() {
         return numComida;
     }   
+
+    void setNumComida(int ingredient) {
+        numComida = ingredient;
+    }
 };
 
-int Comida::numComida = 0;
 queue::blocking_queue<Comida> comida_queue = queue::blocking_queue<Comida>(10);
 
 // Define the Cozinheiro class
@@ -74,55 +71,50 @@ public:
     using ThreadTask::ThreadTask;
 
     static int pratosCozinhados;
+    int aux = comida_queue.getCapacity() * 10;
+
 
     // Override the operator() function
     void operator()() { 
         while(true) {
             std::unique_lock<std::mutex> lock(mtx);
 
-            Comida comida;
-
-            while (!primeira_execucao) {
+            if(!primeira_execucao) {
                 prato_pobre.wait(lock);
             }
 
-            for (int i = 0; i < comida_queue.getCapacity(); i++) {
-                comida = Comida();
+            if(pratosCozinhados == aux) {
+                cout << "Acabaram os ingredientes e o cozinheiro " << ThreadTask::num_thread << " vai fujir" << "\n";
+                while (ThreadTask::numCozinheirosAtivos != 0) { ThreadTask::numCozinheirosAtivos--; break; }
+            }
+
+            for (int i = 1; i <= comida_queue.getCapacity(); i++) {
+                Comida comida = Comida();
+                comida.setNumComida(i);
                 cout << "O Cozinheiro de num" << ThreadTask::num_thread << " está cozinhando a comida de num" << comida.getNumComida() << "\n";
                 comida_queue.enqueue(comida);
                 pratosCozinhados++;
-                {
-                    std::lock_guard<std::mutex> lock(cozinheiro_mtx);
-                    cozinheiro_cv.notify_all();
-                }
             }
 
             cout << "O Cozinheiro " << ThreadTask::num_thread << " já cozinhou e vai dormir" << "\n";
             prato_cheio.notify_all();
 
-            int aux  = comida_queue.getCapacity() *10;
-            if(pratosCozinhados >= aux) {
-                cout << "Acabaram os ingredientes e o cozinheiro " << ThreadTask::num_thread << " vai fujir" << "\n";
-                ThreadTask::numCozinheirosAtivos--;
-                prato_pobre.notify_all();
-                break;
-            }
 
-            if (primeira_execucao) {
-                primeira_execucao = false;
-            }
+            primeira_execucao == true ? primeira_execucao = false : primeira_execucao = true;
         }
         return;
     };
 };
 
-int Cozinheiro::pratosCozinhados = 0;
+int Cozinheiro::pratosCozinhados = 1;
 
 // Define the Canibal class
 class Canibal : public wrapper::ThreadTask {
 public:   
     // Inherit the constructor
+
     using ThreadTask::ThreadTask;
+    int aux = comida_queue.getCapacity() * 10;
 
     static int pratosComidos;
 
@@ -132,46 +124,33 @@ public:
             std::unique_lock<std::mutex> lock(mtx);
 
             if(comida_queue.size() == 0) {
+                cout  << "O Canibal de numero  " << ThreadTask::num_thread << " não comeu e vai bater no cozinheiro." << "\n";
+                prato_pobre.notify_all();
                 // Se não houver comida, verifica se ainda há cozinheiros ativos
-                if(ThreadTask::numCozinheirosAtivos == 0) {
-                    // Se não houver cozinheiros ativos e não houver comida, os canibais podem sair
-                    cout << "Não há comida disponível e não há cozinheiros ativos. Canibal " << ThreadTask::num_thread << " vai sair." << "\n";
+                if(ThreadTask::numCozinheirosAtivos != 0) {
+                    cout << "Não há comida disponível e não há cozinheiros presentes. Canibal " << ThreadTask::num_thread << " vai sair." << "\n";
                     break;
-                } else {
-                    // Se houver cozinheiros ativos, aguarde até que haja comida disponível
-                    prato_cheio.wait(lock);
-                    continue; // Volta para o início do loop para verificar novamente a disponibilidade de comida
                 }
+
+                prato_cheio.wait(lock);
+                //continue;
             }
 
-            {
-                std::unique_lock<std::mutex> lock(cozinheiro_mtx);
-                cozinheiro_cv.wait(lock, [] {
-                        return ThreadTask::numCozinheirosAtivos == 0; 
-                });
-            }
-            Comida comida = comida_queue.dequeue();
-            
-
-            cout  << "O Canibal " << ThreadTask::num_thread << " está comendo a comida de num" << comida.getNumComida() << "\n";
-            comida.comer(); 
-            pratosComidos++;
-
-            int aux  = comida_queue.getCapacity() *10;
-            if(pratosComidos >=  aux) {
-                cout << "Acabaram os ingredientes e o canibal " << ThreadTask::num_thread << " vai tentar comer o cozinheiro" << "\n";   
+            if(pratosComidos ==  aux) {
+                cout << "Acabou a comida e Canibal " << ThreadTask::num_thread << " comeu muito capotou." << "\n";
                 break;
             }
 
-            cout  << "O canibal de numero  " << ThreadTask::num_thread << " não comeu e vai bater no cozinheiro." << "\n";
-            prato_pobre.notify_all();
+            auto yum = comida_queue.dequeue();
+            cout  << "O Canibal " << ThreadTask::num_thread << " está comendo a comida de num" << yum.getNumComida() << "\n";
+            yum.comer(); 
+            pratosComidos++;
         }
-        prato_pobre.notify_all();
         return;
     };
 };
 
-int Canibal::pratosComidos = 0;
+int Canibal::pratosComidos = 1;
 
 // Function to manage the threads
 void management(int thr_can, int thr_coz) {
@@ -189,6 +168,7 @@ void management(int thr_can, int thr_coz) {
         Canibal can = Canibal(thr_can, j);
         allThreads.push_back(move(wrapper::threadWrapper(thread(can))));
     }
+
 }
 
 // Main function
