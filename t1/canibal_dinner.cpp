@@ -10,6 +10,7 @@
 #include "concurrentQueue.hpp"
 #include "threadWrapper.hpp"
 #include "peterson.hpp"
+#include <optional>
 
 // Use namespace std for convenience
 using std::string;
@@ -20,9 +21,7 @@ using std::endl;
 using std::to_string;
 using std::move;
 
-// Define the mutexes
-mutex::peterson_gen peterson_canibal;
-mutex::peterson_gen peterson_cozinheiro;
+// Define the mutexes and condition variables
 mutex::peterson_gen peterson_fome;
 std::mutex empty_lock;
 std::condition_variable prato_pobre;
@@ -32,12 +31,18 @@ struct Comida {
 private:
     bool foiComida;
     static int instanceCount;
-
 public:
+    int ingredientesOver;
+    static int numComida;
 
     Comida() {
         foiComida = false;
-        instanceCount = instanceCount % 5 + 1;
+        instanceCount++;
+
+        if(instanceCount % numComida == 0) {
+            instanceCount = 1;
+            ingredientesOver++;
+        }
     }
 
     void comer() {
@@ -51,10 +56,60 @@ public:
     bool getfoiComida() {
         return foiComida;
     }
+
+    int getIngredientesOver() {
+        return ingredientesOver;
+    }
 };
 
+int Comida::numComida = 1;
 int Comida::instanceCount = 1;
 queue::blocking_queue<Comida> comida_queue = queue::blocking_queue<Comida>(10);
+
+// Define the Cozinheiro class
+class Cozinheiro : public wrapper::ThreadTask {
+public:   
+    // Inherit the constructor
+    using ThreadTask::ThreadTask;
+
+    bool cozinhar(Comida ingredientes) {
+        std::unique_lock<std::mutex> lock(empty_lock);
+        while(comida_queue.empty()) {                  
+            if(!comida_queue.empty()) {
+                return false;
+            }
+            prato_pobre.wait(lock);
+        }
+
+
+        for(int i = 0; i < comida_queue.getCapacity(); i++) {
+            cout << "O Cozinheiro de num " << ThreadTask::num_thread << " está cozinhando a comida de num" <<  ingredientes.getInstanceCount() <<  "\n";
+            comida_queue.enqueue(ingredientes);
+        }
+
+        cout << "O Cozinheiro " << ThreadTask::num_thread << " já cozinhou e vai dormir" << "\n";
+        return true;
+    }
+
+    // Override the operator() function
+    void operator()() { 
+        while(true) {
+            Comida comida = Comida();
+            bool cozinhou = cozinhar(comida);
+
+            if(cozinhou) {
+                cout << "Cozinheiro de numero " << ThreadTask::num_thread << " retornou da cozinha" << "\n";
+            } 
+
+            if(comida.getIngredientesOver() == comida_queue.getCapacity()) {
+                cout << "Acabaram os ingredientes e o cozinheiro " << ThreadTask::num_thread << " vai fujir" << "\n";
+                break;
+            }
+        }
+        return;
+    };
+};
+
 
 // Define the Canibal class
 class Canibal : public wrapper::ThreadTask {
@@ -62,68 +117,35 @@ public:
     // Inherit the constructor
     using ThreadTask::ThreadTask;
 
-    bool comer() {
-        peterson_fome.lock(ThreadTask::num_thread);
-        // std::ostringstream ss;
-        // ss << std::this_thread::get_id();
-        Comida comida = comida_queue.dequeue(); // Pegar comida
-        cout /*<< "Thread " /(<< ss.str() */ << " é o Canibal " << ThreadTask::num_thread << " e está comendo a comida de num" << comida.getInstanceCount() << endl;
-        comida.comer(); // Comer a comida
-        cout /*<< "Thread " << ss.str() */<< " é o Canibal " << ThreadTask::num_thread << " e já comeu a comida de num" <<  comida.getInstanceCount() << endl;
-        peterson_fome.unlock(ThreadTask::num_thread);
-        return comida.getfoiComida();
-    }
-
-    // Override the operator() function
-    void operator()() { 
-        while(true) {
-            bool comeu = comer();
-            peterson_fome.lock(ThreadTask::num_thread);
-            // std::ostringstream ss;
-            // ss << std::this_thread::get_id();
-            if(comeu) {
-                ;
-            } else {
-                cout /* << "Thread Canibal " << ss.str() <<  */  << " de numero  " << ThreadTask::num_thread << " não comeu e vai bater no cozinheiro." << endl;
-                prato_pobre.notify_one();
-            }
+    std::pair<bool, Comida> comer() {
+        std::optional<Comida> comida = comida_queue.dequeue();
+        if(!comida.has_value()) {
+            cout << "O Canibal " << ThreadTask::num_thread << " ainda não tem comida para comer" << "\n";
+            return std::make_pair(false, comida.value());
         }
-        return;
-    };
-};
 
-// Define the Consumer class
-class Cozinheiro : public wrapper::ThreadTask {
-public:   
-    // Inherit the constructor
-    using ThreadTask::ThreadTask;
-
-    bool cozinhar() {
-        std::unique_lock<std::mutex> lock(empty_lock);
-        while(comida_queue.empty()) {
-            prato_pobre.wait(lock);
-        }
-        std::ostringstream ss;
-        ss << std::this_thread::get_id();
+        cout  << "O Canibal " << ThreadTask::num_thread << " e está comendo a comida de num" << comida.value().getInstanceCount() << "\n";
+        comida.value().comer(); // Comer a comida
+        cout << "O Canibal " << ThreadTask::num_thread << " e já comeu a comida de num" <<  comida.value().getInstanceCount() << "\n";
         
-        for(int i = 0; i < comida_queue.getCapacity(); i++) {
-            Comida comida = Comida();
-            cout /*<< "Thread: " << ss.str() */ << " é o Cozinheiro " << ThreadTask::num_thread << " e está cozinhando a comida de num" <<  comida.getInstanceCount() <<  endl;
-            comida_queue.enqueue(comida);
-        }
-        cout /* << "Thread: " << ss.str() << */ << " é o Cozinheiro " << ThreadTask::num_thread << " já cozinhou e vai dormir" << endl;
-        return true;
+        bool foiComida = comida.value().getfoiComida();
+        return std::make_pair(true, comida.value());
     }
 
     // Override the operator() function
     void operator()() { 
         while(true) {
-            bool cozinhou = cozinhar();
-            std::ostringstream ss;
-            ss << std::this_thread::get_id();
-            if(cozinhou) {
-                cout /* << "A Thread Cozinheiro: " */ << ss.str() << " de numero " << ThreadTask::num_thread << " cozinhou" << endl;
-            } 
+            bool comeu; Comida aux;
+            std::tie(comeu, aux) = comer();
+            if(!comeu) {
+                if(aux.getIngredientesOver() == comida_queue.getCapacity()) {
+                    cout << "Acabaram os ingredientes e o canibal " << ThreadTask::num_thread << " vai tentar comer o cozinheiro" << "\n";
+                    prato_pobre.notify_all();
+                    break;
+                }
+                cout  << "O canibal de numero  " << ThreadTask::num_thread << " não comeu e vai bater no cozinheiro." << "\n";
+                prato_pobre.notify_all();
+            }
         }
         return;
     };
@@ -142,7 +164,6 @@ void management(int thr_can, int thr_coz) {
         Cozinheiro coz = Cozinheiro(thr_coz, i);
         allThreads.push_back(move(wrapper::threadWrapper(thread(coz))));
     }
-
 }
 
 // Main function
@@ -153,18 +174,22 @@ int main(int argc, char const *argv[]) {
     int comidas;
 
     if(argc == 2 || argc == 3 || argc > 4) {
-        cout << "Usage2: " << argv[0] << " <threads_canibais> <threads_cozinheiro> <porcoes_comida>" << endl;
+        cout << "Usage2: " << argv[0] << " <threads_canibais> <threads_cozinheiro> <porcoes_comida>" << "\n";
         return 1;
     }
 
     canibais = atoi(argv[1]);
     cozinheiros = atoi(argv[2]);
     comidas = atoi(argv[3]);
+
+    if(comidas < 1 || canibais < 1 || cozinheiros < 1) {
+        cout << "Usage: " << argv[0] << " <greater_than0> <greater_than0> <greater_than0>" << "\n";
+        return 1;
+    }
     
     comida_queue.setCapacity(static_cast<size_t>(comidas));
+    Comida::numComida = comida_queue.getCapacity() + 1;
 
-    peterson_canibal = mutex::peterson_gen(canibais);
-    peterson_cozinheiro = mutex::peterson_gen(cozinheiros);
     peterson_fome = mutex::peterson_gen(); 
 
     // Manage the threads

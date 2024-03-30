@@ -1,32 +1,6 @@
 #pragma once
 
 namespace mutex {   
-   
-    class peterson2 {  // Implementação de mutex de Peterson para duas threads
-        volatile bool flag[2];  // Flags indicando se cada thread quer entrar na seção crítica
-        volatile int turn;  // Indica qual thread tem a vez de entrar na seção crítica
-
-    public:
-        peterson2() {
-            flag[0] = false;
-            flag[1] = false;
-            turn = 0;
-        }
-
-        // Método para solicitar acesso à seção crítica
-        void lock(int t) {
-            flag[t] = true;  // Indica que a thread t quer entrar na seção crítica
-            turn = t;  // Dá a vez para a thread t
-            // Espera enquanto a outra thread quer entrar na seção crítica e tem a vez
-            while (flag[1 - t] && turn == t) {} 
-        }
-            
-        // Método para liberar a seção crítica
-        void unlock(int t) {
-            flag[t] = false;  // Indica que a thread t não quer mais entrar na seção crítica
-        }
-    };
-
     class peterson_gen { // Implementação de mutex de Peterson para n threads
     private:
         volatile int* level = 0;  // Níveis das threads no torneio
