@@ -108,7 +108,6 @@ class Producer : public wrapper::ThreadTaskProdCons {
 
     // Override the operator() function
     void operator()() override { 
-
         while(true) {
             peterson_operator_prod.lock(ThreadTaskProdCons::current_thread);
             std::ostringstream ss;
@@ -161,12 +160,12 @@ void management(int threads_prod, int threads_cons) {
     vector<wrapper::threadWrapper> allThreads;
 
     for(int i = 0; i < threads_prod; i++) {
-        Producer prod = Producer(threads_prod, i, 0);
+        Producer prod = Producer(threads_prod, i);
         allThreads.push_back(move(wrapper::threadWrapper(thread(prod))));
     }
 
     for(int j = 0; j < threads_cons; j++) {
-        Consumer cons = Consumer(threads_cons, j, 0);
+        Consumer cons = Consumer(threads_cons, j);
         allThreads.push_back(move(wrapper::threadWrapper(thread(cons))));
     }
 }

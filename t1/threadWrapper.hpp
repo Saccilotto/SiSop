@@ -73,8 +73,7 @@ namespace wrapper {
 		public:
 			int current_thread;  // Number of threads
 			int num_threads;  // Local counter
-			int maxTravessas;
-			static int travessasAtual;
+			static int count;
 
 			// Destructor, copy constructor, move constructor, copy assignment operator, move assignment operator
 			~ThreadTaskProdCons() = default;
@@ -84,14 +83,13 @@ namespace wrapper {
 			ThreadTaskProdCons& operator=(ThreadTaskProdCons&& other) noexcept = default;
 
 			// Constructor
-			ThreadTaskProdCons(int _threads, int _counter, int _maxTravessas) {
-				current_thread = _threads;
-				num_threads = _counter;
-				maxTravessas = _maxTravessas;
+			ThreadTaskProdCons(int _current_thread, int _num_threads) {
+				current_thread = _current_thread;
+				num_threads = _num_threads;
 			}
 			// Pure virtual function for operator()
 			virtual void operator()() = 0;
 	};
-	int ThreadTaskProdCons::travessasAtual = 0;
+	int ThreadTaskProdCons::count = 0;
 }
 
