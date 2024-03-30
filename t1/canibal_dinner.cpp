@@ -70,10 +70,6 @@ public:
     // Inherit the constructor
     using ThreadTask::ThreadTask;
 
-    static int pratosCozinhados;
-    int aux = comida_queue.getCapacity() * 10;
-
-
     // Override the operator() function
     void operator()() { 
         while(true) {
@@ -83,22 +79,15 @@ public:
                 prato_pobre.wait(lock);
             }
 
-            if(pratosCozinhados == aux) {
-                cout << "Acabaram os ingredientes e o cozinheiro " << ThreadTask::num_thread << " vai fujir" << "\n";
-                while (ThreadTask::numCozinheirosAtivos != 0) { ThreadTask::numCozinheirosAtivos--; break; }
-            }
-
             for (int i = 1; i <= comida_queue.getCapacity(); i++) {
                 Comida comida = Comida();
                 comida.setNumComida(i);
                 cout << "O Cozinheiro de num" << ThreadTask::num_thread << " está cozinhando a comida de num" << comida.getNumComida() << "\n";
                 comida_queue.enqueue(comida);
-                pratosCozinhados++;
             }
 
             cout << "O Cozinheiro " << ThreadTask::num_thread << " já cozinhou e vai dormir" << "\n";
-            prato_cheio.notify_all();
-
+            prato_cheio.notify_one();
 
             primeira_execucao == true ? primeira_execucao = false : primeira_execucao = true;
         }
@@ -106,7 +95,6 @@ public:
     };
 };
 
-int Cozinheiro::pratosCozinhados = 1;
 
 // Define the Canibal class
 class Canibal : public wrapper::ThreadTask {
@@ -114,9 +102,6 @@ public:
     // Inherit the constructor
 
     using ThreadTask::ThreadTask;
-    int aux = comida_queue.getCapacity() * 10;
-
-    static int pratosComidos;
 
     // Override the operator() function
     void operator()() { 
@@ -125,7 +110,7 @@ public:
 
             if(comida_queue.size() == 0) {
                 cout  << "O Canibal de numero  " << ThreadTask::num_thread << " não comeu e vai bater no cozinheiro." << "\n";
-                prato_pobre.notify_all();
+                prato_pobre.notify_one();
                 // Se não houver comida, verifica se ainda há cozinheiros ativos
                 if(ThreadTask::numCozinheirosAtivos != 0) {
                     cout << "Não há comida disponível e não há cozinheiros presentes. Canibal " << ThreadTask::num_thread << " vai sair." << "\n";
@@ -133,24 +118,16 @@ public:
                 }
 
                 prato_cheio.wait(lock);
-                //continue;
-            }
-
-            if(pratosComidos ==  aux) {
-                cout << "Acabou a comida e Canibal " << ThreadTask::num_thread << " comeu muito capotou." << "\n";
-                break;
             }
 
             auto yum = comida_queue.dequeue();
             cout  << "O Canibal " << ThreadTask::num_thread << " está comendo a comida de num" << yum.getNumComida() << "\n";
             yum.comer(); 
-            pratosComidos++;
+            cout << "O Canibal " << ThreadTask::num_thread << " comeu a comida de num" << yum.getNumComida() << "\n";
         }
         return;
     };
 };
-
-int Canibal::pratosComidos = 1;
 
 // Function to manage the threads
 void management(int thr_can, int thr_coz) {
