@@ -24,8 +24,8 @@ using std::mutex;
 using std::unique_lock;
 using std::condition_variable;
 
-mutex_peterson::peterson_gen mtx2_coz = mutex_peterson::peterson_gen(2);
-mutex_peterson::peterson_gen mtx2_can = mutex_peterson::peterson_gen(2);
+mutex_peterson::peterson_gen mtx2_coz = mutex_peterson::peterson_gen();     // default initialized with 2 
+mutex_peterson::peterson_gen mtx2_can = mutex_peterson::peterson_gen();
 mutex_peterson::peterson_gen mtxCan;
 // Define the Comida class
 struct Comida {

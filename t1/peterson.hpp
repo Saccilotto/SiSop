@@ -10,7 +10,7 @@ namespace mutex_peterson {
 
     public:
         // Construtor padrão para duas threads
-        peterson_gen() : size(2){ 
+        peterson_gen() : size(2) { 
             level = new int[2];
             waiting = new int[2];
             level[0] = 0;
