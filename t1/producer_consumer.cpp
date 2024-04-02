@@ -135,7 +135,7 @@ class Consumer : public wrapper::ThreadTaskProdCons {
     using ThreadTaskProdCons::ThreadTaskProdCons;
 
     // Override the operator() function
-    void operator()() { 
+    void operator()() override { 
         while(true) {
             peterson_operator_cons.lock(ThreadTaskProdCons::current_thread);
             std::ostringstream ss;

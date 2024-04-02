@@ -65,7 +65,7 @@ public:
     using ThreadTaskCanibal::ThreadTaskCanibal;
 
     // Override the operator() function
-    void operator()() { 
+    void operator()() override { 
         while(true) {
             mtx2_coz.lock(0);
             std::ostringstream ss;
@@ -96,7 +96,7 @@ public:
     using ThreadTaskCanibal::ThreadTaskCanibal;
 
     // Override the operator() function
-    void operator()() { 
+    void operator()() override { 
         while(true) {
             mtx2_can.lock(0);
             mtxCan.lock(ThreadTaskCanibal::canibal);
