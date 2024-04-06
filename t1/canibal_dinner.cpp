@@ -4,25 +4,18 @@
 #include <vector>
 #include <string>
 #include <sstream>
-#include <condition_variable>
-#include <mutex>
-#include <chrono>
 
 #include "concurrentQueue.hpp"
 #include "threadWrapper.hpp"
 #include "peterson.hpp"
 
-// Use namespace std for convenience
+// namespaces for convenience
 using std::string;
 using std::thread;
 using std::vector;   
 using std::cout;
 using std::endl;
-using std::to_string;
 using std::move; 
-using std::mutex;
-using std::unique_lock;
-using std::condition_variable;
 
 mutex_peterson::peterson_gen mtx2_coz = mutex_peterson::peterson_gen();     // default initialized with 2 
 mutex_peterson::peterson_gen mtx2_can = mutex_peterson::peterson_gen();
