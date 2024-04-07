@@ -1,5 +1,5 @@
 /*
-exemplo com mutex
+exemplo com mutex sempahore
 
 uma unica thread acessa a regiao critica por vez.
 */

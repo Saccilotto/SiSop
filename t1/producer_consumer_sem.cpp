@@ -22,8 +22,8 @@ using queue_block::blocking_queue_circular;
 int data_length = 1000;
 
 // Define Peterson's mutex for general use and another for 2 threads use
-mutex_peterson::peterson_gen peterson_operator_prod;
-mutex_peterson::peterson_gen peterson_operator_cons;
+// mutex_peterson::peterson_gen peterson_operator_prod;
+// mutex_peterson::peterson_gen peterson_operator_cons;
 mutex_peterson::peterson_gen peterson_data;
 
 // Define the Data structure
@@ -109,7 +109,7 @@ class Producer : public wrapper::ThreadTaskProdCons {
     // Override the operator() function
     void operator()() override { 
         while(true) {
-            peterson_operator_prod.lock(ThreadTaskProdCons::current_thread);
+            // peterson_operator_prod.lock(ThreadTaskProdCons::current_thread);
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             Data new_data = Data();
@@ -122,7 +122,7 @@ class Producer : public wrapper::ThreadTaskProdCons {
             new_data.setMessage("Produced by thread id " + ss.str() + " that is the " + to_string(ThreadTaskProdCons::current_thread) + "th Producer thread");    
             new_data.print();
             data_queue.enqueue(new_data);
-            peterson_operator_prod.unlock(ThreadTaskProdCons::current_thread);
+            // peterson_operator_prod.unlock(ThreadTaskProdCons::current_thread);
         }
         return;
     };  
@@ -137,7 +137,7 @@ class Consumer : public wrapper::ThreadTaskProdCons {
     // Override the operator() function
     void operator()() override { 
         while(true) {
-            peterson_operator_cons.lock(ThreadTaskProdCons::current_thread);
+            // peterson_operator_cons.lock(ThreadTaskProdCons::current_thread);
             std::ostringstream ss;
             ss << std::this_thread::get_id();
             Data aux = data_queue.dequeue();
@@ -149,7 +149,7 @@ class Consumer : public wrapper::ThreadTaskProdCons {
             
             aux.setMessage("Consumed by thread id " + ss.str() + " that is the " + to_string(ThreadTaskProdCons::current_thread) + "th Consumer thread");    
             aux.print();
-            peterson_operator_cons.unlock(ThreadTaskProdCons::current_thread);
+            // peterson_operator_cons.unlock(ThreadTaskProdCons::current_thread);
         }
         return;
     };
@@ -189,8 +189,9 @@ int main(int argc, char const *argv[]) {
     int num_consumer_threads = atoi(argv[2]);
 
     // Initialize the Peterson's mutexes
-    peterson_operator_prod = mutex_peterson::peterson_gen(num_producer_threads); // for the N producer threads
-    peterson_operator_cons = mutex_peterson::peterson_gen(num_consumer_threads); // for the M consumer thread
+    // peterson_operator_prod = mutex_peterson::peterson_gen(num_producer_threads); // for the N producer threads
+    // peterson_operator_cons = mutex_peterson::peterson_gen(num_consumer_threads); // for the M consumer thread
+    
     peterson_data = mutex_peterson::peterson_gen();  // for syncronization of the data acess (1 thread from prod and cons at a time)
 
     // Manage the threads
