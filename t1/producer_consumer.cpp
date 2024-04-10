@@ -18,7 +18,7 @@ using std::to_string;
 using std::move;
 using queue_block::blocking_queue_circular;
 
-// Define the length of the data
+// Define the default data length
 int data_length = 1000;
 
 // Define Peterson's mutex for general use and another for 2 threads use
@@ -124,7 +124,7 @@ class Producer : public wrapper::ThreadTaskProdCons {
             data_queue.enqueue(new_data);
             peterson_operator_prod.unlock(ThreadTaskProdCons::current_thread);
         }
-        cout << "Estou morrendo PRODUCER :(" << to_string(ThreadTaskProdCons::current_thread) << "\n";
+        //cout << "Estou morrendo PRODUCER :( " << to_string(ThreadTaskProdCons::current_thread) << "\n";
         return;
     };  
 };
@@ -152,7 +152,7 @@ class Consumer : public wrapper::ThreadTaskProdCons {
             aux.print();
             peterson_operator_cons.unlock(ThreadTaskProdCons::current_thread);
         }
-        cout << "Estou morrendo CONSUMER :(" << to_string(ThreadTaskProdCons::current_thread) << "\n";
+        //cout << "Estou morrendo CONSUMER :( " << to_string(ThreadTaskProdCons::current_thread) << "\n";
         return;
     };
 };
