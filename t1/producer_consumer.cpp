@@ -124,6 +124,7 @@ class Producer : public wrapper::ThreadTaskProdCons {
             data_queue.enqueue(new_data);
             peterson_operator_prod.unlock(ThreadTaskProdCons::current_thread);
         }
+        cout << "Estou morrendo PRODUCER :(" << to_string(ThreadTaskProdCons::current_thread) << "\n";
         return;
     };  
 };
@@ -151,6 +152,7 @@ class Consumer : public wrapper::ThreadTaskProdCons {
             aux.print();
             peterson_operator_cons.unlock(ThreadTaskProdCons::current_thread);
         }
+        cout << "Estou morrendo CONSUMER :(" << to_string(ThreadTaskProdCons::current_thread) << "\n";
         return;
     };
 };

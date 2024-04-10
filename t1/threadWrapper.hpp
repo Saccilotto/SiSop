@@ -71,8 +71,8 @@ namespace wrapper {
 	// Define the base class for thread tasks
 	class ThreadTaskProdCons {
 		public:
-			int current_thread;  // Number of threads
-			int num_threads;  // Local counter
+			int total_threads;  // Number of threads
+			int current_thread;  // Local counter
 			static int count;
 
 			// Destructor, copy constructor, move constructor, copy assignment operator, move assignment operator
@@ -83,9 +83,9 @@ namespace wrapper {
 			ThreadTaskProdCons& operator=(ThreadTaskProdCons&& other) noexcept = default;
 
 			// Constructor
-			ThreadTaskProdCons(int _current_thread, int _num_threads) {
+			ThreadTaskProdCons(int _total_threads, int _current_thread) {
+				total_threads = _total_threads;
 				current_thread = _current_thread;
-				num_threads = _num_threads;
 			}
 			// Pure virtual function for operator()
 			virtual void operator()() = 0;

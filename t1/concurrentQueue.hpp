@@ -2,7 +2,7 @@
 #include <vector>
 #include <semaphore.h> // Inclui a biblioteca para semáforos
 
-#define MAX_CAPACITY 100 // Define a capacidade máxima padrão da fila
+#define MAX_CAPACITY 10 // Define a capacidade máxima padrão da fila
 
 namespace queue_block {
 
