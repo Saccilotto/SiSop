@@ -65,6 +65,7 @@ public:
             ss << std::this_thread::get_id();
 
             for (int i = 1; i <= travessa.getCapacity(); i++) {
+                mtx2_can.lock(0); //new 
                 Comida comida = Comida();
                 comida.setNumComida(i);
                 cout << "O Cozinheiro de num" << ss.str() << " está cozinhando a comida de num" << comida.getNumComida() << "\n";
@@ -98,12 +99,12 @@ public:
             auto yum = travessa.dequeue();
             if(travessa.empty()) {
                 mtx2_coz.unlock(0);
+                mtx2_can.lock(ThreadTaskCanibal::canibal);
             }
             cout  << ss.str() << " O Canibal " << ThreadTaskCanibal::canibal << " está comendo a comida de num" << yum.getNumComida() << "\n";
-            //std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            yum.comer(); 
             cout << ss.str() << " O Canibal " << ThreadTaskCanibal::canibal << " comeu a comida de num" << yum.getNumComida() << "\n";
             mtxCan.unlock(ThreadTaskCanibal::canibal);
+
         }
         return;
     };
